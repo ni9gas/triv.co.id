@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPS Auto Deployment</title>
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #000 !important;
+    font-family: Consolas, monospace;
+    color: #ff3b3b;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+/* Card */
+.card {
+    background: #000;
+    padding: 25px;
+    border-radius: 18px;
+    max-width: 480px;
+    width: 100%;
+    position: relative;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.card::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 18px;
+    background: linear-gradient(90deg, #ff0000, #8b0000, #ff0000);
+    z-index: -1;
+}
+
+/* Text */
+h1 {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #ff8080;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+/* Console */
+.console {
+    background: #000;
+    border: 1px solid #400;
+    border-radius: 8px;
+    padding: 10px;
+    height: 220px;
+    overflow-y: auto;
+    font-size: 0.85em;
+}
+
+.log { color: #ff5555; }
+.ok { color: #00ff99; }
+
+/* Loading bar */
+.bar-wrap {
+    margin-top: 10px;
+    background: #111;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.bar {
+    height: 8px;
+    width: 0%;
+    background: linear-gradient(90deg,#ff0000,#ff5555);
+    transition: width 0.4s;
+}
+
+/* Button */
+button {
+    margin-top: 15px;
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #ff0000, #7a0000);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.credentials {
+    display: none;
+    margin-top: 15px;
+    border: 1px solid #400;
+    border-radius: 8px;
+    padding: 10px;
+}
+span { color:#fff; }
+</style>
+</head>
+
+<body>
+<div class="card">
+    <h1>DEPLOYING SERVER</h1>
+    <div class="subtitle">PLATINUM BAREMETAL NODE</div>
+
+    <div class="console" id="console"></div>
+
+    <div class="bar-wrap">
+        <div class="bar" id="bar"></div>
+    </div>
+
+    <div class="credentials" id="creds"></div>
+</div>
+
+<script>
+const steps = [
+ "Connecting to provisioning cluster...",
+ "Verifying baremetal availability...",
+ "Allocating CPU cores and threads...",
+ "Mounting NVMe storage...",
+ "Partitioning disk and formatting...",
+ "Installing swap and configuring memory (32GB RAM)...",
+ "Setting network interfaces (10 Gbps) and testing connectivity...",
+ "Applying firewall and security rules...",
+ "Installing Ubuntu 22.04 LTS...",
+ "Applying kernel optimizations...",
+ "Starting essential services (SSH, systemd)...",
+ "Finalizing deployment and checking logs..."
+];
+
+function rand(n){ return Math.floor(Math.random()*n); }
+function pass(){ return Math.random().toString(36).slice(-14); }
+
+const con = document.getElementById("console");
+const bar = document.getElementById("bar");
+const creds = document.getElementById("creds");
+
+let i = 0;
+let currentIP = "";
+let currentPass = "";
+
+function autoDeploy() {
+    con.innerHTML = "";
+    i = 0;
+    runStep();
+}
+
+function runStep() {
+    if (i >= steps.length) {
+        setTimeout(showCreds, 1000);
+        return;
+    }
+
+    let percent = Math.floor(((i+1)/steps.length)*100);
+    con.innerHTML += `<div class="log">[+] ${steps[i]} <span class="ok">[${percent}%]</span></div>`;
+    con.scrollTop = con.scrollHeight;
+    bar.style.width = percent + "%";
+
+    i++;
+
+    // Realistic delay: 1.0s – 2.5s per step
+    const delay = rand(1500) + 1000;
+    setTimeout(runStep, delay);
+}
+
+function showCreds(){
+    currentIP = `${rand(200)+20}.${rand(255)}.${rand(255)}.${rand(255)}`;
+    currentPass = pass();
+
+    creds.style.display="block";
+    creds.innerHTML = `
+    <b style="color:#00ff99">DEPLOYMENT COMPLETE</b><br><br>
+    IP: <span>${currentIP}</span><br>
+    USER: <span>root</span><br>
+    PASS: <span>${currentPass}</span><br>
+    OS: <span>Ubuntu 22.04 (Jammy Jellyfish) LTS</span><br>
+    NIC: <span>10 Gbps</span><br><br>
+
+    <button onclick="copyCreds()">COPY CREDENTIALS</button>
+    `;
+}
+
+function copyCreds(){
+    const text = 
+`IP: ${currentIP}
+USER: root
+PASS: ${currentPass}
+OS: Ubuntu 22.04 (Jammy Jellyfish) LTS
+NIC: 10 Gbps`;
+
+    navigator.clipboard.writeText(text).then(()=>{
+        if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.showAlert("Credentials Copied");
+        } else {
+            alert("Credentials Copied");
+        }
+    });
+}
+
+/* Auto start deployment */
+setTimeout(autoDeploy, 800);
+</script>
+</body>
+</html>
